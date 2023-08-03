@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { StyleSheet, View, Text, Button, TextInput, ImageBackground, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, Text, Platform, KeyboardAvoidingView, TextInput, ImageBackground, TouchableOpacity } from 'react-native';
 import bgImage from '../assets/Background_Image.png';
 
 const StartScreen = ({ navigation }) => {
@@ -9,32 +9,38 @@ const StartScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
         <ImageBackground source={bgImage} resizeMode="cover" style={styles.bgImage}>
-            <Text style={styles.appTitle}>chinwag</Text>
-            <View style={styles.inputArea}>
-                <TextInput
-                    style={styles.textInput}
-                    value={name}
-                    onChangeText={setName}
-                    placeholder='Your Name'
-                    inlineImageLeft='icons-user-30.png'
-                />
-                {/* <View style={styles.chooseBgColor}> */}
-                      <Text style={styles.chooseBgColor}>Choose Background Color:</Text>
-                      <View style={styles.colorButtons}>
-                          <TouchableOpacity style={[styles.colorButton, styles.color1]} onPress={() => setBackgroundColor('#090C08')} />
-                          <TouchableOpacity style={[styles.colorButton, styles.color2]} onPress={() => setBackgroundColor('#474056')} />
-                          <TouchableOpacity style={[styles.colorButton, styles.color3]} onPress={() => setBackgroundColor('#8A95A5')}/>
-                          <TouchableOpacity style={[styles.colorButton, styles.color4]} onPress={() => setBackgroundColor('#B9C6AE')}/>
-                      </View>
-                {/* </View>   */}
-                <TouchableOpacity
-                    style={styles.startChattingBtn}
-                    onPress={() => navigation.navigate('ChatScreen', { name: name, backgroundColor: backgroundColor })}
-                >
-                  <Text style={styles.startChattingBtnText}>Start Wagging Your Chin</Text>
-                </TouchableOpacity> 
+            <View style={styles.appTitleContainer}>
+                <Text style={styles.appTitle}>chinwag</Text>
+            </View>
+            <View style={styles.wrapper}>
+                <View style={styles.inputArea}>
+                    <TextInput
+                        style={styles.textInput}
+                        value={name}
+                        onChangeText={setName}
+                        placeholder='Your Name'
+                        inlineImageLeft='icons8-user-30.png'
+                    />
+
+                    <Text style={styles.chooseBgColor}>Choose Background Color:</Text>
+                    <View style={styles.colorButtons}>
+                        {/* onPress must be a callback instead of a direct use of setBackgroundColor to avoid an infinite loop  */}
+                            <TouchableOpacity style={[styles.colorButton, styles.color1]} onPress={() => setBackgroundColor('#090C08')} /> 
+                            <TouchableOpacity style={[styles.colorButton, styles.color2]} onPress={() => setBackgroundColor('#474056')} />
+                            <TouchableOpacity style={[styles.colorButton, styles.color3]} onPress={() => setBackgroundColor('#8A95A5')} />
+                            <TouchableOpacity style={[styles.colorButton, styles.color4]} onPress={() => setBackgroundColor('#B9C6AE')} />
+                    </View>
+                    <TouchableOpacity
+                        style={styles.startChattingBtn}
+                        onPress={() => navigation.navigate('ChatScreen', { name: name, backgroundColor: backgroundColor })}
+                    >
+                    <Text style={styles.startChattingBtnText}>Start Wagging Your Chin</Text>
+                    </TouchableOpacity> 
+                </View>
             </View>
         </ImageBackground>      
+          {Platform.OS === "ios" ? <KeyboardAvoidingView behavior="padding" /> : null}  
+          {Platform.OS === "android" ? <KeyboardAvoidingView behavior="height" /> : null}
     </View>
   );
 }
@@ -47,47 +53,58 @@ const styles = StyleSheet.create({
     },
     bgImage: {
         flex: 1,
-        // justifyContent: 'center',
+        justifyContent: 'flex-start',
         alignItems: 'center',
         height: '100%',
+    },
+    appTitleContainer: {
+        flex: 1,
+        justifyContent: 'center'
     },
     appTitle: {
         fontSize: 45,
         fontWeight: '600',
         color: '#FFFFFF',
-        marginTop: '35%',
+        textAlign: 'center',
+    },
+    wrapper: {
+        padding: 16,
+        width: '100%',
     },
     inputArea: {
         backgroundColor: 'white',
-        height: '44%',
-        width: '88%',
+        // height: '44%',
+        // width: '88%',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginTop: '50%',
+        // marginTop: '50%',
         borderRadius: 5,
+        padding: 16,
     },
     textInput: {
-        width: "88%",
+        // width: "88%",
         padding: 15,
         borderWidth: 1,
         borderColor: 'rgba(117, 112, 131, 0.6)',
-        marginTop: 15,
+        // marginTop: 15,
         marginBottom: 15,
         fontSize: 16,
         fontWeight: '300',
-        color: 'rgba(117, 112, 131, 0.6)'
+        color: 'rgba(117, 112, 131, 0.6)',
+        width: '100%',
     },
     chooseBgColor: {
         fontSize: 16,
         color: 'rgba(117, 112, 131, 0.6)',
         alignSelf: 'flex-start',
-        marginLeft: '6%',
+        // marginLeft: '6%',
     },
     colorButtons: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignSelf: 'flex-start',
-        marginLeft: '6%',
+        // marginLeft: '6%',
+        marginBottom: 24
     },
     colorButton: {
         height: 50,
@@ -110,12 +127,14 @@ const styles = StyleSheet.create({
     },
     startChattingBtn: {
         backgroundColor: '#757083',
-        width: '88%',
+        // width: '88%',
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: '5%',
-        height: 60,
+        // marginBottom: '5%',
+        // height: 60,
         borderRadius: 5,
+        padding: 16,
+        width: '100%'
     },
     startChattingBtnText: {
         color: '#FFFFFF',
