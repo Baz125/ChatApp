@@ -8,7 +8,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 const Stack = createNativeStackNavigator();
 
 import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, initializeFirestore } from "firebase/firestore";
 
 const App = () => {
   const firebaseConfig = {
@@ -23,7 +23,12 @@ const App = () => {
 
   const app = initializeApp(firebaseConfig);
 
-  const db = getFirestore(app);
+  // const db = getFirestore(app);
+
+  const db = initializeFirestore(app, {
+    useFetchStreams: false,
+    experimentalForceLongPolling: true
+  });
 
   return (
     <NavigationContainer>
@@ -37,7 +42,6 @@ const App = () => {
         />
         <Stack.Screen
           name="ChatScreen"
-          component={ChatScreen}
         >
           {props => <ChatScreen db={db} {...props} />}
         </Stack.Screen>

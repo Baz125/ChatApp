@@ -13,6 +13,7 @@ const StartScreen = ({ navigation }) => {
         signInAnonymously(auth)
             .then(result => {
                 navigation.navigate("ChatScreen", { userID: result.user.uid, name: name, backgroundColor: backgroundColor });
+                Alert.alert("Signed in Successfully");
             })
             .catch((error) => {
                 Alert.alert("Unable to sign in, please try again later")
