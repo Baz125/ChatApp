@@ -23,8 +23,9 @@ const App = () => {
 
   const app = initializeApp(firebaseConfig);
 
-  // const db = getFirestore(app);
-
+  // const db = getFirestore(app); this code was causing an error
+  
+  // found this workaround online for DB connection problems. It replaced the line above.
   const db = initializeFirestore(app, {
     useFetchStreams: false,
     experimentalForceLongPolling: true
