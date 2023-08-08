@@ -1,10 +1,23 @@
 import { useState } from 'react';
-import { StyleSheet, View, Text, Platform, KeyboardAvoidingView, TextInput, ImageBackground, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, Text, Platform, KeyboardAvoidingView, TextInput, ImageBackground, TouchableOpacity, Alert } from 'react-native';
 import bgImage from '../assets/Background_Image.png';
+import { getAuth, signInAnonymously } from "firebase/auth";
 
 const StartScreen = ({ navigation }) => {
     const [name, setName] = useState('');
     const [backgroundColor, setBackgroundColor] = useState('');
+    const auth = getAuth();
+
+    //this function signs the user into firebase anonymously, and if that is successful, navigates the user to the chat while passing the relevant props
+    const signInUser = () => {
+        signInAnonymously(auth)
+            .then(result => {
+                navigation.navigate("ChatScreen", { userID: result.user.uid, name: name, backgroundColor: backgroundColor });
+            })
+            .catch((error) => {
+                Alert.alert("Unable to sign in, please try again later")
+            })
+    }
 
   return (
     <View style={styles.container}>
@@ -32,7 +45,7 @@ const StartScreen = ({ navigation }) => {
                     </View>
                     <TouchableOpacity
                         style={styles.startChattingBtn}
-                        onPress={() => navigation.navigate('ChatScreen', { name: name, backgroundColor: backgroundColor })}
+                        onPress={() => signInUser()}
                     >
                     <Text style={styles.startChattingBtnText}>Start Wagging Your Chin</Text>
                     </TouchableOpacity> 

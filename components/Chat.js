@@ -1,11 +1,12 @@
 import { StyleSheet, View, KeyboardAvoidingView, Platform } from 'react-native';
 import { useEffect, useState } from 'react';
 import { Bubble, GiftedChat } from 'react-native-gifted-chat';
+import { collection, query, orderBy, where, addDoc, onSnapshot } from "firebase/firestore";
 
-const ChatScreen = ({ route, navigation }) => {
+const ChatScreen = ({ route, navigation, db }) => {
     const [messages, setMessages] = useState([]);
 
-    const { name, backgroundColor } = route.params;
+    const { name, backgroundColor, userID } = route.params;
 
     // this sets the user's name to the navigation header. useEffect with empty array as 2nd paramater means it is run only once, after mounting
     useEffect(() => {
@@ -13,30 +14,24 @@ const ChatScreen = ({ route, navigation }) => {
     }, []);
 
     useEffect(() => {
-        setMessages([
-            {
-                _id: 1,
-                text: "You have entered the chat",
-                createdAt: new Date(),
-                system: true,
-            },
-            {
-                _id: 2,
-                text: 'Fancy a chinwag?',
-                createdAt: new Date(),
-                user: {
-                    _id: 2,
-                    name: "React Native",
-                    avatar: "https://placeimg.com/140/140/any",
-                },
-            }
-        ]);
+        //pull messages from db - order by time created. onSnapshot pushes from db on every change, updates messages state
+        const q = query(collection(db, "messages"), orderBy("createdAt", "desc"));
+        const unsubMessages = onSnapshot(q, (documentsSnapshot) => {
+            let newMessages = [];
+            documentsSnapshot.forEach(doc => {
+                newMessages.push({ id: doc.id, ...doc.data() })
+            });
+            setMessages(newMessages)
+        });
+        //effect cleanup
+        return () => {
+            if (unsubMessages) unsubMessages();
+        }
     }, []);
     
     // passing a callback into setMessages allows for using the previous state before it disappears
     const onSend = (newMessages) => {
-        setMessages(previousMessages => GiftedChat.append(previousMessages, newMessages));
-        console.log(newMessages);
+        addDoc(collection(db, "messages"), newMessages[0])
     };
     
     const renderBubble = (props) => {
@@ -61,7 +56,8 @@ const ChatScreen = ({ route, navigation }) => {
                 renderBubble={renderBubble}
                 onSend={messages => onSend(messages)}
                 user={{
-                    _id: 1
+                    _id: 1,
+                    name: name
                 }}
             />
             {Platform.OS === 'android' ? <KeyboardAvoidingView behaviour="height" /> : null}
