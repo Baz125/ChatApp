@@ -4,11 +4,14 @@ import StartScreen from './components/Start';
 import ChatScreen from './components/Chat';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useNetInfo } from "@react-native-community/netinfo";
+import { useEffect } from "react";
+import { Alert } from "react-native";
 
 const Stack = createNativeStackNavigator();
 
 import { initializeApp } from "firebase/app";
-import { getFirestore, initializeFirestore } from "firebase/firestore";
+import { getFirestore, initializeFirestore, disableNetwork, enableNetwork } from "firebase/firestore";
 
 const App = () => {
   const firebaseConfig = {
@@ -20,16 +23,26 @@ const App = () => {
     appId: "1:356172084338:web:d808590a15094ebc9abeeb",
     measurementId: "G-P6X7KHZ794"
   };
-
+  
   const app = initializeApp(firebaseConfig);
 
   // const db = getFirestore(app); this code was causing an error
-  
   // found this workaround online for DB connection problems. It replaced the line above.
   const db = initializeFirestore(app, {
     useFetchStreams: false,
     experimentalForceLongPolling: true
   });
+
+  const connectionStatus = useNetInfo();
+
+  useEffect(() => {
+    if (connectionStatus.isConnected === false) {
+      Alert.alert("Connection lost!");
+      disableNetwork(db);
+    } else if (connectionStatus.isConnected === true) {
+      enableNetwork(db);
+    }
+  }, [connectionStatus.isConnected]);
 
   return (
     <NavigationContainer>
@@ -44,7 +57,7 @@ const App = () => {
         <Stack.Screen
           name="ChatScreen"
         >
-          {props => <ChatScreen db={db} {...props} />}
+          {props => <ChatScreen isConnected={connectionStatus.isConnected} db={db} {...props} />}
         </Stack.Screen>
       </Stack.Navigator>
     </NavigationContainer>
