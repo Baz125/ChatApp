@@ -7,6 +7,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useNetInfo } from "@react-native-community/netinfo";
 import { useEffect } from "react";
 import { Alert } from "react-native";
+import { getStorage } from "firebase/storage";
 
 const Stack = createNativeStackNavigator();
 
@@ -32,6 +33,7 @@ const App = () => {
     useFetchStreams: false,
     experimentalForceLongPolling: true
   });
+  const storage = getStorage(app);
 
   const connectionStatus = useNetInfo();
 
@@ -57,7 +59,12 @@ const App = () => {
         <Stack.Screen
           name="ChatScreen"
         >
-          {props => <ChatScreen isConnected={connectionStatus.isConnected} db={db} {...props} />}
+          {props => <ChatScreen
+            isConnected={connectionStatus.isConnected}
+            db={db}
+            storage={storage}
+            {...props}
+          />}
         </Stack.Screen>
       </Stack.Navigator>
     </NavigationContainer>

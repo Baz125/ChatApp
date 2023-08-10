@@ -3,14 +3,13 @@ import { useEffect, useState } from 'react';
 import { Bubble, GiftedChat, InputToolbar, GiftedAvatar } from 'react-native-gifted-chat';
 import { collection, query, orderBy, addDoc, onSnapshot } from "firebase/firestore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import CustomActions from './CustomActions';
+import MapView from 'react-native-maps';
 
-const ChatScreen = ({ route, navigation, db, isConnected }) => {
+const ChatScreen = ({ route, navigation, db, isConnected, storage }) => {
     const [messages, setMessages] = useState([]);
 
     const { name, backgroundColor, userID } = route.params;
-
-    console.log("name: ", name);
-    console.log("userID ", userID);
 
     // this sets the user's name to the navigation header. useEffect with empty array as 2nd paramater means it is run only once, after mounting
     useEffect(() => {
@@ -84,21 +83,49 @@ const ChatScreen = ({ route, navigation, db, isConnected }) => {
             return <InputToolbar {...props} />
         } else return null;
     }
+
+    const renderCustomActions = (props) => {
+        return <CustomActions storage={storage} {...props} />;
+      };
      
+    
+    const renderCustomView = (props) => {
+        const { currentMessage } = props;
+        if (currentMessage.location) {
+            return (
+                <MapView
+                    style={{width: 150,
+                        height: 100,
+                        borderRadius: 13,
+                        margin: 10}}
+                    region={{
+                        latitude: currentMessage.location.latitude,
+                        longitude: currentMessage.location.longitude,
+                        latitudeDelta: 0.0922,
+                        longitudeDelta: 0.0421,
+                    }}
+                />
+            );
+        }
+        return null;
+    }
+
     return (
         //  backgroundColor is not available within the scope of the Stylesheet, so I added it separately here, where it is in scope
         <View style={[styles.container, { backgroundColor: backgroundColor }]} >
             <GiftedChat
                 messages={messages}
                 renderBubble={renderBubble}
+                renderCustomView={renderCustomView}
                 renderInputToolbar={renderInputToolbar}
                 onSend={messages => onSend(messages)}
+                renderActions={renderCustomActions}
                 user={{
                     _id: userID,
                     name: name,
                 }}
             />
-            {Platform.OS === 'android' ? <KeyboardAvoidingView behaviour="height" /> : null}
+            {Platform.OS === 'android' ? <KeyboardAvoidingView behavior="height" /> : null}
         </View>
     );
 };
