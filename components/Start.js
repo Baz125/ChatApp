@@ -54,7 +54,6 @@ const StartScreen = ({ navigation }) => {
             </View>
         </ImageBackground>      
           {Platform.OS === "ios" ? <KeyboardAvoidingView behavior="padding" /> : null}  
-          {Platform.OS === "android" ? <KeyboardAvoidingView behavior="height" /> : null}
     </View>
   );
 }
@@ -63,7 +62,6 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         justifyContent: 'center',
-        // alignItems: 'center',
     },
     bgImage: {
         flex: 1,
@@ -76,7 +74,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center'
     },
     appTitle: {
-        fontSize: 45,
+        fontSize: 75,
         fontWeight: '600',
         color: '#FFFFFF',
         textAlign: 'center',
@@ -87,20 +85,15 @@ const styles = StyleSheet.create({
     },
     inputArea: {
         backgroundColor: 'white',
-        // height: '44%',
-        // width: '88%',
         justifyContent: 'space-between',
         alignItems: 'center',
-        // marginTop: '50%',
         borderRadius: 5,
         padding: 16,
     },
     textInput: {
-        // width: "88%",
         padding: 15,
         borderWidth: 1,
         borderColor: 'rgba(117, 112, 131, 0.6)',
-        // marginTop: 15,
         marginBottom: 15,
         fontSize: 16,
         fontWeight: '300',
@@ -111,13 +104,11 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: 'rgba(117, 112, 131, 0.6)',
         alignSelf: 'flex-start',
-        // marginLeft: '6%',
     },
     colorButtons: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignSelf: 'flex-start',
-        // marginLeft: '6%',
         marginBottom: 24
     },
     colorButton: {
@@ -141,11 +132,8 @@ const styles = StyleSheet.create({
     },
     startChattingBtn: {
         backgroundColor: '#757083',
-        // width: '88%',
         justifyContent: 'center',
         alignItems: 'center',
-        // marginBottom: '5%',
-        // height: 60,
         borderRadius: 5,
         padding: 16,
         width: '100%'
