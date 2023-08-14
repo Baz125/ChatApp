@@ -85,7 +85,7 @@ const ChatScreen = ({ route, navigation, db, isConnected, storage }) => {
     }
 
     const renderCustomActions = (props) => {
-        return <CustomActions storage={storage} {...props} />;
+        return <CustomActions storage={storage} userID={userID} {...props} />;
       };
      
     
