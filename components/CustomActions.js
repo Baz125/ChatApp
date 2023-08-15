@@ -3,17 +3,12 @@ import { TouchableOpacity, Text, View, StyleSheet, Alert } from "react-native";
 import { useActionSheet } from "@expo/react-native-action-sheet";
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { ref, uploadBytes, getDownloadURL, uploadBytesResumable } from "firebase/storage";
 import { Audio } from "expo-av";
 import { useEffect } from "react";
+import * as mime from 'react-native-mime-types';
 
-const CustomActions = ({
-    wrapperStyle,
-    iconTextStyle,
-    onSend,
-    storage,
-    userID,
-}) => {
+const CustomActions = ({ wrapperStyle, iconTextStyle, onSend, storage, userID}) => {
     const actionSheet = useActionSheet();
     let recordingObject = null;
 
@@ -51,7 +46,7 @@ const CustomActions = ({
         );
     };
 
-    //this is creating the unique identifier for the pic in the DB
+    //creates the unique identifier for any media stored on DB
     const generateReference = (uri) => {
         const timeStamp = new Date().getTime();
         const imageName = uri.split("/")[uri.split("/").length - 1];
@@ -59,18 +54,66 @@ const CustomActions = ({
     };
 
     const uploadAndSendImage = async (imageURI) => {
-        uniqueRefString = generateReference(imageURI);
+        const type = mime.lookup(imageURI);
+        const uniqueRefString = generateReference(imageURI);
         const newUploadRef = ref(storage, uniqueRefString);
-        const response = await fetch(imageURI);
-        const blob = await response.blob();
 
-        uploadBytes(newUploadRef, blob).then(async (snapshot) => {
-            console.log("File has been uploaded successfully");
-            const imageURL = await getDownloadURL(snapshot.ref);
-            onSend({ image: imageURL });
+        const imageBlob = await getBlobFromUri(imageURI);
+        const metadata = {
+            contentType: type
+        };
+        const uploadTask = uploadBytesResumable(newUploadRef, imageBlob, metadata);
+        uploadTask.on('state_changed', undefined, undefined, () => {
+            getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+                onSend({ image: downloadURL });
+            });
         });
     };
 
+    const uploadAndSendAudio = async () => {
+        await stopRecording();
+        const recordingURI = recordingObject.getURI();
+        const type = mime.lookup(recordingURI);
+        const uniqueRefString = generateReference(recordingURI);
+        const newUploadRef = ref(storage, uniqueRefString);
+        const recordingBlob = await getBlobFromUri(recordingURI);
+        const metadata = {
+            contentType: type
+        };
+        const uploadTask = uploadBytesResumable(newUploadRef, recordingBlob, metadata);
+        uploadTask.on('state_changed', undefined, undefined, () => {
+            getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+                onSend({ audio: downloadURL });
+            })
+        })
+    };
+    //this XMLHttpRequest replaces fetch which is not working on Android 13 and firebase at time of writing
+    const getBlobFromUri = async (uri) => {
+        const blob = await new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            // If successful return with blob
+            xhr.onload = function () {
+                resolve(xhr.response);
+            };
+            // reject on error
+            xhr.onerror = function (e) {
+                reject(new TypeError("Network request failed"));
+            };
+            // setting response type to blob means the server's 
+            // response will be accessed as a binary object
+            xhr.responseType = "blob";
+            // Initialize the request. The third argument set to 'true' denotes 
+            // that the request is asynchronous
+            xhr.open("GET", uri, true);
+            // Send the request. The 'null' argument means
+            // that no body content is given for the request
+            xhr.send(null);
+        });
+
+        return blob;
+    };
+
+    //stops recording if user were to exit app during recording, without having pressed cancel or send
     useEffect(() => {
         return () => {
             if (recordingObject) recordingObject.stopAndUnloadAsync();
@@ -107,7 +150,7 @@ const CustomActions = ({
                                 {
                                     text: "Stop and Send",
                                     onPress: () => {
-                                        sendRecordedSound();
+                                        uploadAndSendAudio();
                                     },
                                 },
                             ],
@@ -128,52 +171,20 @@ const CustomActions = ({
         await recordingObject.stopAndUnloadAsync();
     };
 
-    const sendRecordedSound = async () => {
-        await stopRecording();
-        const uniqueRefString = generateReference(recordingObject.getURI());
-        const newUploadRef = ref(storage, uniqueRefString);
-        const response = await fetch(recordingObject.getURI());
-        const blob = await response.blob();
-        uploadBytes(newUploadRef, blob).then(async (snapshot) => {
-            const soundURL = await getDownloadURL(snapshot.ref);
-            onSend({ audio: soundURL });
-        });
-    };
 
     const pickImage = async () => {
         let permissions =
             await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (permissions?.granted) {
-            let result = await ImagePicker.launchImageLibraryAsync();
+            let result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            });
             if (!result.canceled)
                 await uploadAndSendImage(result.assets[0].uri);
             else Alert.alert("permissions haven't been granted");
         }
     };
 
-    //ATTEMPT 1
-    //at getting the file from the device without using fetch
-    // const pickImage = async() => {
-    //     let permissions = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    //     if (permissions?.granted) {
-    //       let result = await ImagePicker.launchImageLibraryAsync();
-    //         if (!result.canceled) {
-    //             const imageURI = result.assets[0].uri;
-    //             try {
-    //                 const fileData = await RNFS.readFile(imageURI, 'base64');
-    //                 const blob = new Blob([fileData], { type: 'image/jpeg' }); // Adjust the type as needed
-    //                 const newUploadRef = ref(storage, 'image123');
-    //                 uploadBytes(newUploadRef, blob).then(async (snapshot) => {
-    //                     console.log('File has been uploaded successfully');
-    //                 });
-    //             } catch (error) {
-    //                 console.error('Error reading local file as blob:', error);
-    //             }
-    //         } else {
-    //             Alert.alert("Permissions haven't been granted");
-    //         }
-    //     }
-    // }
 
     const takePhoto = async () => {
         let permissions = await ImagePicker.requestCameraPermissionsAsync();
@@ -187,7 +198,6 @@ const CustomActions = ({
 
     const getLocation = async () => {
         let permissions = await Location.requestForegroundPermissionsAsync();
-
         if (permissions?.granted) {
             const location = await Location.getCurrentPositionAsync({});
             if (location) {
