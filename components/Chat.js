@@ -1,81 +1,187 @@
-import { StyleSheet, View, KeyboardAvoidingView, Platform } from 'react-native';
-import { useEffect, useState } from 'react';
-import { Bubble, GiftedChat } from 'react-native-gifted-chat';
-import { collection, query, orderBy, where, addDoc, onSnapshot } from "firebase/firestore";
+import { StyleSheet, View, KeyboardAvoidingView, Platform, Text, TouchableOpacity } from "react-native";
+import { useEffect, useState } from "react";
+import {Bubble, GiftedChat, InputToolbar, GiftedAvatar} from "react-native-gifted-chat";
+import {collection,query,orderBy,addDoc,onSnapshot,} from "firebase/firestore";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import CustomActions from "./CustomActions";
+import MapView from "react-native-maps";
+import { Audio } from "expo-av";
 
-const ChatScreen = ({ route, navigation, db }) => {
+
+const ChatScreen = ({ route, navigation, db, isConnected, storage }) => {
     const [messages, setMessages] = useState([]);
-
     const { name, backgroundColor, userID } = route.params;
+    let soundObject = null;
 
     // this sets the user's name to the navigation header. useEffect with empty array as 2nd paramater means it is run only once, after mounting
     useEffect(() => {
         navigation.setOptions({ title: name });
     }, []);
 
+    let unsubMessages;
+
     useEffect(() => {
-        //pull messages from db - order by time created. onSnapshot pushes from db on every change, updates messages state
-        const q = query(collection(db, "messages"), orderBy("createdAt", "desc"));
-        const unsubMessages = onSnapshot(q, (documentsSnapshot) => {
-            let newMessages = [];
-            documentsSnapshot.forEach(doc => {
-                newMessages.push({
-                    _id: doc.id,
-                    ...doc.data(),
-                    createdAt: new Date(doc.data().createdAt.toMillis())
-                })
+        if (isConnected === true) {
+            // unregister current onSnapshot() listener to avoid registering
+            // multiple listeners when useEffect code is re-executed.
+            if (unsubMessages) unsubMessages();
+            unsubMessages = null;
+            //pull messages from db - order by time created. onSnapshot pushes from db on every change
+            const q = query(
+                collection(db, "messages"),
+                orderBy("createdAt", "desc")
+            );
+            unsubMessages = onSnapshot(q, (documentsSnapshot) => {
+                let newMessages = [];
+                documentsSnapshot.forEach((doc) => {
+                    newMessages.push({
+                        _id: doc.id,
+                        ...doc.data(),
+                        createdAt: new Date(doc.data().createdAt.toMillis()),
+                    });
+                });
+                cacheMessages(newMessages);
+                setMessages(newMessages);
             });
-            setMessages(newMessages)
-        });
+        } else loadCachedMessages();
         //effect cleanup
         return () => {
             if (unsubMessages) unsubMessages();
+            if (soundObject) soundObject.unloadAsunc();
+        };
+    }, [isConnected]);
+
+    const cacheMessages = async (messagesToCache) => {
+        try {
+            await AsyncStorage.setItem(
+                "messages",
+                JSON.stringify(messagesToCache)
+            );
+        } catch (error) {
+            console.log(error.message);
         }
-    }, []);
-    
+    };
+
+    const loadCachedMessages = async () => {
+        const cachedMessages = (await AsyncStorage.getItem("messages")) || [];
+        setMessages(JSON.parse(cachedMessages));
+    };
+
     // passing a callback into setMessages allows for using the previous state before it disappears
     const onSend = (newMessages) => {
-        addDoc(collection(db, "messages"), newMessages[0])
+        addDoc(collection(db, "messages"), newMessages[0]);
     };
-    
+
     const renderBubble = (props) => {
-        return <Bubble
-            {...props}
-            wrapperStyle={{
-                right: {
-                    backgroundColor: "#002eff"
-                },
-                left: {
-                    backgroundColor: "#00ff52"
-                }
-            }}
-        />
+        return (
+            <Bubble
+                {...props}
+                wrapperStyle={{
+                    right: {
+                        backgroundColor: "#002eff",
+                    },
+                    left: {
+                        backgroundColor: "#00ff52",
+                    },
+                }}
+            />
+        );
     };
-     
+
+    const renderInputToolbar = (props) => {
+        if (isConnected === true) {
+            return <InputToolbar {...props} />;
+        } else return null;
+    };
+
+    const renderCustomActions = (props) => {
+        return <CustomActions storage={storage} userID={userID} {...props} />;
+    };
+
+    const renderAudioBubble = (props) => {
+        return (
+            <View {...props}>
+                <TouchableOpacity
+                    style={{
+                        backgroundColor: "#FF0",
+                        borderRadius: 10,
+                        margin: 5,
+                    }}
+                    onPress={async () => {
+                        if (soundObject) soundObject.unloadAsync();
+                        const { sound } = await Audio.Sound.createAsync({
+                            uri: props.currentMessage.audio,
+                        });
+                        soundObject = sound;
+                        await sound.playAsync();
+                    }}
+                >
+                    <Text
+                        style={{
+                            textAlign: "center",
+                            color: "black",
+                            padding: 5,
+                        }}
+                    >
+                        Play Sound
+                    </Text>
+                </TouchableOpacity>
+            </View>
+        );
+    };
+
+    const renderCustomView = (props) => {
+        const { currentMessage } = props;
+        if (currentMessage.location) {
+            return (
+                <MapView
+                    style={{
+                        width: 150,
+                        height: 100,
+                        borderRadius: 13,
+                        margin: 10,
+                    }}
+                    region={{
+                        latitude: currentMessage.location.latitude,
+                        longitude: currentMessage.location.longitude,
+                        latitudeDelta: 0.0922,
+                        longitudeDelta: 0.0421,
+                    }}
+                />
+            );
+        }
+        return null;
+    };
+
     return (
         //  backgroundColor is not available within the scope of the Stylesheet, so I added it separately here, where it is in scope
-        <View style={[styles.container, { backgroundColor: backgroundColor }]} >
+        <View style={[styles.container, { backgroundColor: backgroundColor }]}>
             <GiftedChat
                 messages={messages}
                 renderBubble={renderBubble}
-                onSend={messages => onSend(messages)}
+                renderCustomView={renderCustomView}
+                renderInputToolbar={renderInputToolbar}
+                renderMessageAudio={renderAudioBubble}
+                onSend={(messages) => onSend(messages)}
+                renderActions={renderCustomActions}
                 user={{
-                    _id: 1,
-                    name: name
+                    _id: userID,
+                    name: name,
                 }}
             />
-            {Platform.OS === 'android' ? <KeyboardAvoidingView behaviour="height" /> : null}
+            {Platform.OS === "android" ? (
+                <KeyboardAvoidingView behavior="height" />
+            ) : null}
         </View>
     );
 };
 
 const styles = StyleSheet.create({
- container: {
-    flex: 1,
-    justifyContent: 'center',
-    // alignItems: 'center',
-    }
+    container: {
+        flex: 1,
+        justifyContent: "center",
+        // alignItems: 'center',
+    },
 });
-
 
 export default ChatScreen;
