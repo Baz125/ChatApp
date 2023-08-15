@@ -1,12 +1,13 @@
-# def: chinwag
+ _definition:_ chinwag
 __British English, Hiberno English__ (<sup>verb</sup> -wagged, -wagging)  
 (ˈtʃɪnˌwæɡ); slang  
 INTRANSITIVE VERB  
-to chat idly; gossip  
+_to chat idly; gossip_  
 NOUN  
-an idle chat; gossiping  
+_an idle chat; gossiping_ 
 
-CHINWAG is a React Native Mobile Chat App, it provides users with a chat interface inside a single chat room with unauthenticated login, and options to share images, audio and location.
+# chinwag
+chinwag is a React Native Mobile Chat App, it provides users with a chat interface inside a single chat room with unauthenticated login, and options to share images, audio and location.
 
 The application is built using React Native and Expo. Messages and media are stored on Google Firebase Firestore. Gifted Chat was used for the Chat UI. Chats are availble to the user in offline-mode.
 
