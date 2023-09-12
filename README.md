@@ -7,9 +7,18 @@ NOUN
 _an idle chat; gossiping_ 
 
 # chinwag
-chinwag is a React Native Mobile Chat App, it provides users with a chat interface inside a single chat room with unauthenticated login, and options to share images, audio and location.
+chinwag is a React Native Mobile Chat App, it provides users with a chat interface inside a single chat room with unauthenticated login, and functionality to share images, audio and location.
 
-The application is built using React Native and Expo. Messages and media are stored on Google Firebase Firestore. Gifted Chat was used for the Chat UI. Chats are availble to the user in offline-mode.
+This is a portfolio project focussing on Native App Development with React Native, real-time event driven functionality.
+
+## Technologies & Libraries Used
+- React Native
+- Node.js
+- Expo
+- Gifted Chat
+- Google Firebase/Firestore
+- React Native Async Storage
+- React Native Netinfo
 
 ## Prerequisites
 
